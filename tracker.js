@@ -13,15 +13,30 @@ function registerEvent(event) {
 }
 
 function connectionMonitor() {
-    ping.sys.probe('8.8.8.8', function(isUp) {
-        if (isUp && !connected) {
-            registerEvent('Conectado com a internet');
-            connected = true;
-        } else if (!isUp && connected) {
-            registerEvent('Sem conexão');
-            connected = false;
-        }
-    });
+    console.log('Verificando a conexão...');
+    ping.promise.probe('8.8.8.8')
+        .then(isUp => {
+            console.log(`Resultado do ping: ${isUp.alive}`);
+            if (isUp.alive) {
+                if (!connected) {
+                    registerEvent('Conectado com a internet');
+                    connected = true;
+                } else {
+                    registerEvent('Conexão ainda ativa');
+                }
+            } else {
+                if (connected) {
+                    registerEvent('Sem conexão');
+                    connected = false;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao verificar a conexão:', error);
+        })
+        .finally(() => {
+            setTimeout(connectionMonitor, 60000);
+        });
 }
 
-setInterval(connectionMonitor, 300000);
+connectionMonitor();
